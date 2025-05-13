@@ -18,25 +18,28 @@ GMI_API_KEY = os.getenv("GMI_API_KEY")
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"  # A fast, general-purpose sentence embedding model
 
 
-# ==================== PDF Chunking ====================
-def extract_chunks_from_file(uploaded_file, chunk_size: int = 300) -> List[str]:
+# ==================== PDF, DOCX, and TXT Chunking ====================
+def extract_chunks_from_file(
+    uploaded_file, chunk_size: int = 300, overlap: int = 100
+) -> List[str]:
     """
-    Extract text from .pdf, .docx, or .txt file and split into chunks.
+    Extract text from .pdf, .docx, or .txt file and split into overlapping chunks.
 
     Args:
         uploaded_file: File-like object from Streamlit uploader.
-        chunk_size: Approximate words per chunk.
+        chunk_size: Number of words per chunk.
+        overlap: Number of overlapping words between chunks.
 
     Returns:
-        List[str]: Chunked resume text.
+        List[str]: List of chunked resume texts.
     """
     import io
 
     file_name = uploaded_file.name.lower()
 
     try:
+        # ========== Extract Text ==========
         if file_name.endswith(".pdf"):
-            # Use fitz to extract PDF text
             doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
             text = "\n".join(page.get_text() for page in doc)
 
@@ -54,14 +57,16 @@ def extract_chunks_from_file(uploaded_file, chunk_size: int = 300) -> List[str]:
                 "❌ Unsupported file format. Only PDF, DOCX, and TXT are supported."
             ]
 
+        # ========== Sliding Chunking ==========
         words = text.split()
-        if len(words) <= 1000:
-            return [text]
+        chunks = []
+        step = chunk_size - overlap
 
-        return [
-            " ".join(words[i : i + chunk_size])
-            for i in range(0, len(words), chunk_size)
-        ]
+        for i in range(0, len(words), step):
+            chunk = words[i : i + chunk_size]
+            chunks.append(" ".join(chunk))
+
+        return chunks if chunks else ["❌ No text extracted from the file."]
 
     except Exception as e:
         return [f"❌ Error processing file: {str(e)}"]
