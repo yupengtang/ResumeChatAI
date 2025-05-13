@@ -203,7 +203,7 @@ if st.session_state.messages:
 
 # Main logic
 if uploaded_file:
-    st.toast("🧠 Analyzing the resume...")
+    st.toast("🔄 Processing...")
 
     # Extract resume
     chunks = extract_chunks_from_file(uploaded_file)
