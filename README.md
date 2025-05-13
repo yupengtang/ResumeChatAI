@@ -16,6 +16,22 @@ Upload a PDF, DOCX, or TXT resume, and ask questions to extract insights using R
 
 ---
 
+## 🧭 System Architecture
+
+Below is the high-level architecture of ResumeChatAI, based on Retrieval-Augmented Generation (RAG):
+
+![System Architecture](./assets/rag-architecture.png)
+
+---
+
+## 🖼️ Demo Screenshot
+
+Here's an example of what ResumeChatAI looks like in action:
+
+![Demo Screenshot](./assets/demo-ui.png)
+
+---
+
 ## 🔧 Setup
 
 1. **Clone this repository**  
