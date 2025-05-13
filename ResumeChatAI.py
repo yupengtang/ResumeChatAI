@@ -1,4 +1,4 @@
-# Run the app using: python -m streamlit run "c:\Users\Yupen\Desktop\RAG\ResumeGPT.py"
+# Run the app using: python -m streamlit run "c:\Users\Yupen\Desktop\RAG\ResumeChatAI.py" --server.runOnSave=false
 
 import os
 from dotenv import load_dotenv  # Load environment variables from .env
@@ -175,41 +175,69 @@ def call_gmi_rag(query: str, context: List[str]) -> str:
 st.set_page_config(page_title="ResumeChatAI", layout="wide")
 st.title("📄 ResumeChatAI: Understand any resume through conversation")
 
-# File upload widget
 uploaded_file = st.file_uploader(
     "Select a resume document", type=["pdf", "docx", "txt"]
 )
 
-# Main processing pipeline
+# Initialize chat history
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+# Add a clear button
+if st.button("🗑️ Clear chat"):
+    st.session_state.messages = []
+
+# Download chat history
+if st.session_state.messages:
+    chat_history_text = "\n".join(
+        [
+            f"{msg['role'].capitalize()}: {msg['content']}"
+            for msg in st.session_state.messages
+        ]
+    )
+    st.download_button(
+        "📥 Download chat history",
+        chat_history_text,
+        file_name="resumechat_history.txt",
+    )
+
+# Main logic
 if uploaded_file:
-    st.success("✅ Resume uploaded and processing...")
+    st.toast("✅ Resume uploaded and processing...")
 
-    # Step 1: Extract & split resume
+    # Extract resume
     chunks = extract_chunks_from_file(uploaded_file)
-
     if len(chunks) == 1 and chunks[0].startswith("❌"):
         st.error(chunks[0])
         st.stop()
 
-    # Step 2: Load embedding model
+    # Load embedding model and index
     embed_model = load_embedding_model()
-
-    # Step 3: Convert text chunks to embeddings
     embeddings = embed_chunks(chunks, embed_model)
-
-    # Step 4: Build FAISS index
     index = build_faiss_index(embeddings)
 
-    # Step 5: Ask user question
-    query = st.text_input("Ask a question about the resume:")
+    # Display previous messages
+    for msg in st.session_state.messages:
+        with st.chat_message(msg["role"]):
+            st.markdown(msg["content"])
+
+    # Get new input
+    query = st.chat_input("Ask something about the resume...")
 
     if query:
+        # Immediately show user input
+        with st.chat_message("user"):
+            st.markdown(query)
+
+        # Append to chat history
+        st.session_state.messages.append({"role": "user", "content": query})
+
+        # Search and respond
         top_chunks = retrieve_top_k(query, embed_model, chunks, index)
+        with st.spinner("🤖 Reading the resume and thinking..."):
+            answer = call_gmi_rag(query, top_chunks)
 
-        with st.expander("Retrieved Resume Chunks"):
-            for i, chunk in enumerate(top_chunks, 1):
-                st.write(f"**Chunk {i}:** {chunk[:200]}...")
-
-        answer = call_gmi_rag(query, top_chunks)
-        st.markdown("### 🤖 AI Response")
-        st.info(answer)
+        # Save and display assistant response
+        st.session_state.messages.append({"role": "assistant", "content": answer})
+        with st.chat_message("assistant"):
+            st.markdown(answer)
