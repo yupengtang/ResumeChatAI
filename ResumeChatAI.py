@@ -202,9 +202,8 @@ if st.session_state.messages:
     )
 
 # Main logic
-if uploaded_file and "resume_uploaded" not in st.session_state:
-    st.toast("✅ Resume uploaded and processing...")
-    st.session_state.resume_uploaded = True
+if uploaded_file:
+    st.toast("🧠 Analyzing the resume...")
 
     # Extract resume
     chunks = extract_chunks_from_file(uploaded_file)
